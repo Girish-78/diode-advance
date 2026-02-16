@@ -1,0 +1,1691 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>P-N Junction Diode Engineering Lab</title>
+  <style>
+    :root {
+      --bg-1: #f6fbff;
+      --bg-2: #e9f4f7;
+      --ink: #0d2430;
+      --soft-ink: #345666;
+      --panel: rgba(255, 255, 255, 0.72);
+      --panel-border: rgba(18, 62, 82, 0.18);
+      --p-core: #e46f66;
+      --p-lite: #f9b58f;
+      --n-core: #4d8fd9;
+      --n-lite: #90d4e8;
+      --accent: #f1b854;
+      --field: #12758f;
+      --good: #1d8a4f;
+      --warn: #c96f28;
+      --shadow: 0 10px 28px rgba(30, 72, 91, 0.13);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: "Bahnschrift", "Segoe UI Variable", "Trebuchet MS", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1000px 600px at 15% -15%, rgba(255, 194, 108, 0.25), transparent 60%),
+        radial-gradient(1200px 700px at 120% 20%, rgba(69, 155, 200, 0.24), transparent 66%),
+        linear-gradient(160deg, var(--bg-1), var(--bg-2));
+      overflow-x: hidden;
+    }
+
+    .app {
+      max-width: 1420px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      padding: clamp(8px, 1.2vw, 16px) clamp(8px, 1.2vw, 16px) clamp(10px, 1.6vw, 18px);
+      display: grid;
+      gap: clamp(8px, 1vh, 14px);
+      grid-template-rows: auto auto auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: end;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--shadow);
+      border-radius: 18px;
+      padding: 14px 16px;
+      backdrop-filter: blur(8px);
+      animation: rise 600ms ease both;
+    }
+
+    .title {
+      margin: 0;
+      font-size: clamp(1.2rem, 1.4vw + 0.8rem, 1.95rem);
+      letter-spacing: 0.4px;
+      line-height: 1.1;
+      text-transform: uppercase;
+    }
+
+    .sub {
+      margin-top: 6px;
+      color: var(--soft-ink);
+      font-size: 0.95rem;
+    }
+
+    .state-chip {
+      justify-self: end;
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(17, 92, 73, 0.24);
+      background: rgba(224, 255, 238, 0.85);
+      color: #0e6141;
+      font-weight: 700;
+      font-size: 0.85rem;
+      min-width: 195px;
+      text-align: center;
+    }
+
+    .layout {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.9fr);
+      align-items: stretch;
+      min-height: 0;
+    }
+
+    .card {
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      animation: rise 720ms ease both;
+    }
+
+    .stage-card {
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      min-height: 0;
+    }
+
+    #simCanvas {
+      width: 100%;
+      height: clamp(230px, 42dvh, 520px);
+      min-height: 230px;
+      border-radius: 14px;
+      border: 1px solid rgba(15, 73, 89, 0.18);
+      background: linear-gradient(180deg, rgba(244, 251, 255, 0.92), rgba(235, 248, 252, 0.9));
+      touch-action: none;
+      cursor: grab;
+      display: block;
+    }
+
+    #simCanvas.dragging {
+      cursor: grabbing;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      font-size: 0.86rem;
+      color: var(--soft-ink);
+      padding: 2px 2px 0;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .controls {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+      min-height: 0;
+    }
+
+    .controls h2 {
+      margin: 0;
+      font-size: 1.03rem;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .panel {
+      border: 1px solid rgba(25, 76, 99, 0.16);
+      border-radius: 12px;
+      padding: 10px 10px 8px;
+      background: rgba(255, 255, 255, 0.75);
+      display: grid;
+      gap: 8px;
+    }
+
+    .ctl {
+      display: grid;
+      gap: 4px;
+    }
+
+    .ctl label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.84rem;
+      color: var(--soft-ink);
+      gap: 8px;
+    }
+
+    .ctl output {
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #1b7d99;
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    button {
+      border: 1px solid rgba(24, 74, 94, 0.2);
+      background: linear-gradient(180deg, #ffffff, #f0f7fb);
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-weight: 700;
+      font-family: inherit;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 140ms ease, border-color 160ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(24, 102, 128, 0.34);
+      box-shadow: 0 4px 14px rgba(31, 81, 102, 0.16);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .btn-strong {
+      background: linear-gradient(180deg, #dff7ec, #cbefdc);
+      border-color: rgba(27, 128, 76, 0.3);
+      color: #145b39;
+    }
+
+    .btn-warn {
+      background: linear-gradient(180deg, #fff2e2, #ffe4c9);
+      border-color: rgba(168, 95, 43, 0.32);
+      color: #7a451e;
+    }
+
+    .note {
+      font-size: 0.82rem;
+      color: var(--soft-ink);
+      margin: 0;
+      line-height: 1.35;
+    }
+
+    .lower {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+      min-height: 0;
+    }
+
+    .chart-card, .metrics-card {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      animation: rise 860ms ease both;
+      min-height: 0;
+    }
+
+    #barrierCanvas {
+      width: 100%;
+      height: clamp(140px, 20dvh, 220px);
+      border-radius: 12px;
+      border: 1px solid rgba(16, 78, 100, 0.2);
+      background: linear-gradient(180deg, rgba(249, 253, 255, 0.95), rgba(234, 246, 252, 0.95));
+      display: block;
+    }
+
+    .chart-title {
+      margin: 0;
+      font-size: 0.96rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .meter {
+      display: grid;
+      gap: 6px;
+    }
+
+    .meter-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      font-size: 0.87rem;
+      color: var(--soft-ink);
+    }
+
+    .meter-head strong {
+      color: var(--ink);
+      font-size: 0.9rem;
+    }
+
+    .bar {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(127, 161, 178, 0.18);
+      overflow: hidden;
+      border: 1px solid rgba(17, 71, 89, 0.15);
+    }
+
+    .bar > i {
+      display: block;
+      height: 100%;
+      width: 20%;
+      border-radius: inherit;
+      transition: width 200ms ease;
+    }
+
+    .diff-fill {
+      background: linear-gradient(90deg, #db9f49, #f1bf67);
+    }
+
+    .drift-fill {
+      background: linear-gradient(90deg, #3f9ec8, #63bedf);
+    }
+
+    .depletion-fill {
+      background: linear-gradient(90deg, #d26f64, #dfa18a);
+    }
+
+    .formation-fill {
+      background: linear-gradient(90deg, #8f63db, #4f90ff);
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .kv {
+      border: 1px solid rgba(24, 72, 94, 0.16);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.76);
+      padding: 8px 9px;
+      display: grid;
+      gap: 3px;
+    }
+
+    .kv b {
+      font-size: 0.8rem;
+      color: var(--soft-ink);
+      font-weight: 600;
+    }
+
+    .kv span {
+      font-size: 0.94rem;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+    }
+
+    .status {
+      border-radius: 11px;
+      border: 1px solid rgba(17, 87, 112, 0.2);
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      font-size: 0.88rem;
+      color: var(--soft-ink);
+      line-height: 1.33;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 980px) {
+      .layout, .lower {
+        grid-template-columns: 1fr;
+      }
+
+      .state-chip {
+        justify-self: start;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      #simCanvas {
+        height: clamp(250px, 46dvh, 480px);
+      }
+    }
+
+    @media (max-width: 620px) {
+      .btn-row {
+        grid-template-columns: 1fr;
+      }
+
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .controls, .chart-card, .metrics-card, .stage-card {
+        padding: 10px;
+      }
+
+      #simCanvas {
+        height: clamp(240px, 42dvh, 380px);
+      }
+
+      button {
+        padding: 10px 12px;
+      }
+    }
+
+    @media (min-width: 981px) {
+      body {
+        overflow: hidden;
+      }
+
+      .app {
+        height: 100dvh;
+        grid-template-rows: auto minmax(0, 1fr) minmax(0, 0.72fr);
+      }
+
+      .controls {
+        overflow: auto;
+      }
+
+      .chart-card, .metrics-card {
+        overflow: auto;
+      }
+
+      #simCanvas {
+        height: clamp(220px, 34dvh, 420px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="hero card">
+      <div>
+        <h1 class="title">P-N Junction Diode Engineering Lab</h1>
+        <div class="sub">Drag p-type and n-type slabs together, watch depletion and barrier form, then tune bias and doping to control diffusion and drift.</div>
+      </div>
+      <div class="state-chip" id="junctionState">Junction Open</div>
+    </header>
+
+    <div class="layout">
+      <section class="stage-card card">
+        <canvas id="simCanvas"></canvas>
+        <div class="legend">
+          <span><i class="dot" style="background:#2677ff"></i>Electron (e-)</span>
+          <span><i class="dot" style="background:#ff4a37"></i>Hole (h+)</span>
+          <span><i class="dot" style="background:#ffb340"></i>Majority carriers: diffusion</span>
+          <span><i class="dot" style="background:#8bdcff"></i>Minority carriers: drift</span>
+          <span><i class="dot" style="background:#f2be65"></i>Depletion layer + fixed ions</span>
+          <span><i class="dot" style="background:#1b9a8b"></i>Electric field (N to P)</span>
+        </div>
+      </section>
+
+      <aside class="controls card">
+        <h2>Engineer Controls</h2>
+        <div class="panel">
+          <div class="ctl">
+            <label for="pDoping">P-type acceptor density <output id="pDopingOut"></output></label>
+            <input id="pDoping" type="range" min="14" max="18" step="0.1" value="16">
+          </div>
+          <div class="ctl">
+            <label for="nDoping">N-type donor density <output id="nDopingOut"></output></label>
+            <input id="nDoping" type="range" min="14" max="18" step="0.1" value="16">
+          </div>
+          <div class="ctl">
+            <label for="temp">Temperature (K) <output id="tempOut"></output></label>
+            <input id="temp" type="range" min="240" max="450" step="1" value="300">
+          </div>
+          <div class="ctl">
+            <label for="bias">Applied bias (V) <output id="biasOut"></output></label>
+            <input id="bias" type="range" min="-10" max="1.5" step="0.05" value="0">
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button id="playBtn" class="btn-strong">Pause</button>
+          <button id="resetBtn">Reset</button>
+        </div>
+
+        <div class="btn-row">
+          <button id="autoJoinBtn" class="btn-strong">Auto Join</button>
+          <button id="separateBtn" class="btn-warn">Separate</button>
+        </div>
+
+        <div class="btn-row">
+          <button id="equilibriumBtn">Equilibrium</button>
+          <button id="forwardBtn">Forward Bias</button>
+        </div>
+
+        <button id="reverseBtn">Reverse Bias</button>
+        <p class="note">Tip for class 10-12: drag slabs together slowly, then vary bias to compare majority diffusion (forward bias) and minority drift (reverse bias).</p>
+      </aside>
+    </div>
+
+    <div class="lower">
+      <section class="chart-card card">
+        <h3 class="chart-title">Potential Barrier Profile</h3>
+        <canvas id="barrierCanvas"></canvas>
+        <p class="note">Curve shows electrostatic potential from p-side to n-side. Forward bias lowers the barrier, reverse bias raises it.</p>
+      </section>
+
+      <section class="metrics-card card">
+        <h3 class="chart-title">Live Junction Metrics</h3>
+        <div class="metrics-grid">
+          <div class="kv"><b>Built-in Potential</b><span id="builtInVal">0.00 V</span></div>
+          <div class="kv"><b>Effective Barrier</b><span id="effBarrierVal">0.00 V</span></div>
+          <div class="kv"><b>Depletion Width</b><span id="depletionVal">0 nm</span></div>
+          <div class="kv"><b>Net Current</b><span id="netCurrentVal">+0.000 uA</span></div>
+          <div class="kv"><b>Formation Stage</b><span id="stepStageVal">Step 0/4</span></div>
+        </div>
+
+        <div class="meter">
+          <div class="meter-head"><span>Diffusion Current</span><strong id="diffusionVal">0.000 uA</strong></div>
+          <div class="bar"><i id="diffusionBar" class="diff-fill"></i></div>
+        </div>
+        <div class="meter">
+          <div class="meter-head"><span>Drift Current</span><strong id="driftVal">0.000 uA</strong></div>
+          <div class="bar"><i id="driftBar" class="drift-fill"></i></div>
+        </div>
+        <div class="meter">
+          <div class="meter-head"><span>Depletion Growth</span><strong id="depletionPct">0%</strong></div>
+          <div class="bar"><i id="depletionBar" class="depletion-fill"></i></div>
+        </div>
+        <div class="meter">
+          <div class="meter-head"><span>Step-wise Formation</span><strong id="formationVal">0%</strong></div>
+          <div class="bar"><i id="formationBar" class="formation-fill"></i></div>
+        </div>
+
+        <div class="status" id="statusText">Bring the slabs into contact to begin carrier diffusion and depletion formation.</div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const simCanvas = document.getElementById("simCanvas");
+    const barrierCanvas = document.getElementById("barrierCanvas");
+    const junctionState = document.getElementById("junctionState");
+    const statusText = document.getElementById("statusText");
+
+    const controls = {
+      pDoping: document.getElementById("pDoping"),
+      nDoping: document.getElementById("nDoping"),
+      temp: document.getElementById("temp"),
+      bias: document.getElementById("bias"),
+      pDopingOut: document.getElementById("pDopingOut"),
+      nDopingOut: document.getElementById("nDopingOut"),
+      tempOut: document.getElementById("tempOut"),
+      biasOut: document.getElementById("biasOut"),
+      playBtn: document.getElementById("playBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      autoJoinBtn: document.getElementById("autoJoinBtn"),
+      separateBtn: document.getElementById("separateBtn"),
+      equilibriumBtn: document.getElementById("equilibriumBtn"),
+      forwardBtn: document.getElementById("forwardBtn"),
+      reverseBtn: document.getElementById("reverseBtn"),
+      builtInVal: document.getElementById("builtInVal"),
+      effBarrierVal: document.getElementById("effBarrierVal"),
+      depletionVal: document.getElementById("depletionVal"),
+      netCurrentVal: document.getElementById("netCurrentVal"),
+      diffusionVal: document.getElementById("diffusionVal"),
+      driftVal: document.getElementById("driftVal"),
+      depletionPct: document.getElementById("depletionPct"),
+      stepStageVal: document.getElementById("stepStageVal"),
+      formationVal: document.getElementById("formationVal"),
+      diffusionBar: document.getElementById("diffusionBar"),
+      driftBar: document.getElementById("driftBar"),
+      depletionBar: document.getElementById("depletionBar"),
+      formationBar: document.getElementById("formationBar")
+    };
+
+    const ctx = simCanvas.getContext("2d");
+    const bctx = barrierCanvas.getContext("2d");
+
+    const state = {
+      width: 0,
+      height: 0,
+      pX: 0,
+      nX: 0,
+      running: true,
+      time: 0,
+      dt: 0,
+      lastTs: 0,
+      dragging: null,
+      dragOffset: 0,
+      autoGapTarget: null,
+      contact: 0,
+      gap: 0,
+      depletionWidth: 0,
+      barrierShown: 0,
+      formationProgress: 0,
+      formationStep: 0,
+      particles: [],
+      spawnCarry: { diffE: 0, diffH: 0, driftE: 0, driftH: 0 },
+      physics: null
+    };
+
+    const cloud = {
+      pMajor: makeSeeds(160),
+      pMinor: makeSeeds(90),
+      nMajor: makeSeeds(160),
+      nMinor: makeSeeds(90)
+    };
+
+    const formationSteps = [
+      {
+        label: "Step 0/4: Separate",
+        stage: 0,
+        short: "P and N are separate. No depletion layer yet."
+      },
+      {
+        label: "Step 1/4: Diffusion starts",
+        stage: 1,
+        short: "Electrons and holes cross the junction and recombine near the center."
+      },
+      {
+        label: "Step 2/4: Immobile ions appear",
+        stage: 2,
+        short: "Fixed ions are left behind: negative on p-side, positive on n-side."
+      },
+      {
+        label: "Step 3/4: Depletion widens",
+        stage: 3,
+        short: "The space-charge region grows and builds an electric field from N to P."
+      },
+      {
+        label: "Step 4/4: Barrier formed",
+        stage: 4,
+        short: "The built-in potential is established and drift balances diffusion."
+      }
+    ];
+
+    function makeSeeds(count) {
+      const list = [];
+      for (let i = 0; i < count; i += 1) {
+        list.push({
+          x: Math.random(),
+          y: Math.random(),
+          phase: Math.random() * Math.PI * 2,
+          amp: 0.5 + Math.random() * 1.2
+        });
+      }
+      return list;
+    }
+
+    function clamp(v, lo, hi) {
+      return Math.max(lo, Math.min(hi, v));
+    }
+
+    function smooth01(v) {
+      const t = clamp(v, 0, 1);
+      return t * t * (3 - 2 * t);
+    }
+
+    function getFormationInfo() {
+      return formationSteps[state.formationStep] || formationSteps[0];
+    }
+
+    function powerText(exp) {
+      return `10^${exp.toFixed(1)} cm^-3`;
+    }
+
+    function currentVisual(aAmp) {
+      const abs = Math.abs(aAmp);
+      return clamp(Math.log10(1 + abs * 1e9) / 6, 0, 1);
+    }
+
+    function formatCurrent(aAmp, signed = false) {
+      const abs = Math.abs(aAmp);
+      let value = abs * 1e6;
+      let unit = "uA";
+      if (abs >= 1e-3) {
+        value = abs * 1e3;
+        unit = "mA";
+      }
+      const digits = value >= 100 ? 1 : value >= 10 ? 2 : 3;
+      const text = `${value.toFixed(digits)} ${unit}`;
+      if (!signed) return text;
+      return `${aAmp >= 0 ? "+" : "-"}${text}`;
+    }
+
+    function updateControlOutputs() {
+      controls.pDopingOut.textContent = powerText(parseFloat(controls.pDoping.value));
+      controls.nDopingOut.textContent = powerText(parseFloat(controls.nDoping.value));
+      controls.tempOut.textContent = `${parseFloat(controls.temp.value).toFixed(0)} K`;
+      const bias = parseFloat(controls.bias.value);
+      controls.biasOut.textContent = `${bias >= 0 ? "+" : ""}${bias.toFixed(2)} V`;
+    }
+
+    function getBlockGeometry() {
+      const margin = Math.max(22, state.width * 0.025);
+      const blockW = clamp(state.width * 0.33, 160, 320);
+      const y = clamp(state.height * 0.24, 62, 132);
+      const h = clamp(state.height * 0.44, 145, 255);
+      return { margin, blockW, y, h };
+    }
+
+    function resetBlocks() {
+      const { margin, blockW } = getBlockGeometry();
+      state.pX = margin;
+      state.nX = state.width - margin - blockW;
+    }
+
+    function resizeCanvases() {
+      const dpr = window.devicePixelRatio || 1;
+      const simRect = simCanvas.getBoundingClientRect();
+      state.width = simRect.width;
+      state.height = simRect.height;
+      simCanvas.width = Math.floor(simRect.width * dpr);
+      simCanvas.height = Math.floor(simRect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const bRect = barrierCanvas.getBoundingClientRect();
+      barrierCanvas.width = Math.floor(bRect.width * dpr);
+      barrierCanvas.height = Math.floor(bRect.height * dpr);
+      bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      if (state.pX === 0 && state.nX === 0) {
+        resetBlocks();
+      } else {
+        constrainBlocks();
+      }
+    }
+
+    function constrainBlocks() {
+      const { margin, blockW } = getBlockGeometry();
+      state.pX = clamp(state.pX, margin, state.width - margin - blockW * 2 - 2);
+      state.nX = clamp(state.nX, margin + blockW + 2, state.width - margin - blockW);
+      const minGap = 2;
+      if (state.nX < state.pX + blockW + minGap) {
+        if (state.dragging === "p") {
+          state.pX = state.nX - blockW - minGap;
+        } else {
+          state.nX = state.pX + blockW + minGap;
+        }
+      }
+      state.pX = clamp(state.pX, margin, state.width - margin - blockW * 2 - minGap);
+      state.nX = clamp(state.nX, state.pX + blockW + minGap, state.width - margin - blockW);
+    }
+
+    function getPointerX(evt) {
+      const rect = simCanvas.getBoundingClientRect();
+      return evt.clientX - rect.left;
+    }
+
+    function onPointerDown(evt) {
+      const { blockW, y, h } = getBlockGeometry();
+      const x = getPointerX(evt);
+      const yPos = evt.clientY - simCanvas.getBoundingClientRect().top;
+      if (yPos < y || yPos > y + h) return;
+      if (x >= state.pX && x <= state.pX + blockW) {
+        state.dragging = "p";
+        state.dragOffset = x - state.pX;
+        state.autoGapTarget = null;
+      } else if (x >= state.nX && x <= state.nX + blockW) {
+        state.dragging = "n";
+        state.dragOffset = x - state.nX;
+        state.autoGapTarget = null;
+      }
+      if (state.dragging) {
+        simCanvas.classList.add("dragging");
+        simCanvas.setPointerCapture(evt.pointerId);
+      }
+    }
+
+    function onPointerMove(evt) {
+      if (!state.dragging) return;
+      const x = getPointerX(evt);
+      if (state.dragging === "p") {
+        state.pX = x - state.dragOffset;
+      } else {
+        state.nX = x - state.dragOffset;
+      }
+      constrainBlocks();
+    }
+
+    function onPointerUp(evt) {
+      if (state.dragging) {
+        simCanvas.releasePointerCapture(evt.pointerId);
+      }
+      state.dragging = null;
+      simCanvas.classList.remove("dragging");
+    }
+
+    function calcPhysics() {
+      const { blockW } = getBlockGeometry();
+      state.gap = Math.max(0, state.nX - (state.pX + blockW));
+      if (state.gap <= 3) {
+        state.nX = state.pX + blockW + 2;
+        state.gap = 2;
+      }
+      state.contact = clamp(1 - state.gap / 170, 0, 1);
+      const junctionReady = smooth01((state.contact - 0.7) / 0.3);
+
+      const NaExp = parseFloat(controls.pDoping.value);
+      const NdExp = parseFloat(controls.nDoping.value);
+      const Na = Math.pow(10, NaExp);
+      const Nd = Math.pow(10, NdExp);
+      const T = parseFloat(controls.temp.value);
+      const bias = parseFloat(controls.bias.value);
+
+      const ni = 1e10 * Math.pow(T / 300, 1.75) * Math.exp((T - 300) / 260);
+      const Vt = 0.02585 * (T / 300);
+      const VbiRaw = Vt * Math.log((Na * Nd) / (ni * ni));
+      const Vbi = clamp(isFinite(VbiRaw) ? VbiRaw : 0.2, 0.1, 1.25);
+      const Veff = Math.max(0.005, Vbi - bias);
+
+      const NaRel = Math.pow(10, NaExp - 14);
+      const NdRel = Math.pow(10, NdExp - 14);
+      const dopFactor = 1 / (Math.sqrt(NaRel) + Math.sqrt(NdRel));
+      const depBase = 24 + 188 * Math.sqrt(Math.max(Veff, 0.005)) * (0.62 + 1.95 * dopFactor);
+
+      if (state.contact > 0.93) {
+        if (state.running) {
+          const growthRate = 0.2 + junctionReady * 0.72 + Math.max(0, -bias) * 0.1 + Math.max(0, bias) * 0.16;
+          state.formationProgress = clamp(state.formationProgress + state.dt * growthRate, 0, 1);
+        }
+      } else if (state.contact < 0.75 && state.running) {
+        state.formationProgress = clamp(state.formationProgress - state.dt * 1.5, 0, 1);
+      }
+
+      if (state.contact < 0.93) {
+        state.formationStep = 0;
+      } else if (state.formationProgress < 0.25) {
+        state.formationStep = 1;
+      } else if (state.formationProgress < 0.53) {
+        state.formationStep = 2;
+      } else if (state.formationProgress < 0.86) {
+        state.formationStep = 3;
+      } else {
+        state.formationStep = 4;
+      }
+
+      const formationFactor = state.contact > 0.93 ? (0.18 + 0.82 * state.formationProgress) : 0;
+      const targetDep = junctionReady * formationFactor * clamp(depBase, 24, state.width * 0.36);
+
+      const relax = state.running ? clamp(state.dt * 8, 0.02, 0.35) : 0;
+      state.depletionWidth += (targetDep - state.depletionWidth) * relax;
+      state.barrierShown += (junctionReady * formationFactor * Veff - state.barrierShown) * relax;
+
+      const lowDopingFactor = Math.pow(10, (17 - NaExp) * 0.42 + (17 - NdExp) * 0.42);
+      const tempLeak = Math.pow(T / 300, 2.6);
+      const Is = 8e-9 * lowDopingFactor * tempLeak;
+      const ideality = 1.75 - 0.15 * clamp((NaExp + NdExp - 32) / 4, 0, 1);
+      const expArg = clamp(bias / (ideality * Vt), -16, 12);
+      const forwardGain = Math.exp(expArg);
+
+      let diffCurrentA = junctionReady * Is * forwardGain;
+      let driftCurrentA = junctionReady * Is * (1 + Math.pow(Math.max(0, -bias), 1.28) * (0.8 + 0.5 * tempLeak));
+      if (bias < -4.5) {
+        const breakdown = Math.exp(((-bias) - 4.5) / 1.05) - 1;
+        driftCurrentA *= 1 + 80 * breakdown;
+      }
+
+      const currentFormationFactor = state.contact > 0.93 ? (0.35 + 0.65 * state.formationProgress) : state.contact * 0.25;
+      diffCurrentA *= currentFormationFactor;
+      driftCurrentA *= currentFormationFactor;
+
+      const netCurrentA = diffCurrentA - driftCurrentA;
+      const netScaled = clamp(
+        netCurrentA / (Math.abs(diffCurrentA) + Math.abs(driftCurrentA) + 1e-15),
+        -1,
+        1
+      );
+
+      state.physics = {
+        NaExp, NdExp, T, bias, Vbi, Veff, junctionReady,
+        Is, diffCurrentA, driftCurrentA, netCurrentA, netScaled
+      };
+    }
+
+    function spawnParticle(type, junctionX, regionY, regionH) {
+      const { blockW } = getBlockGeometry();
+      const xMin = state.pX + 10;
+      const xMax = state.nX + blockW - 10;
+      const lane = {
+        diffE: 0.28,
+        diffH: 0.41,
+        driftE: 0.63,
+        driftH: 0.78
+      }[type] || 0.5;
+      const p = {
+        type,
+        x: junctionX,
+        y: regionY + regionH * lane + (Math.random() - 0.5) * 10,
+        vx: 0,
+        vy: (Math.random() - 0.5) * 16,
+        life: 1.8 + Math.random() * 1.1,
+        age: 0
+      };
+      const bias = state.physics.bias;
+      const tempBoost = (state.physics.T - 240) / 210;
+      const push = 44 + Math.abs(state.physics.netScaled) * 70 + tempBoost * 24;
+      const dep = state.depletionWidth * 0.5 + 8;
+
+      if (type === "diffE") {
+        p.x = junctionX + dep + Math.random() * 65;
+        p.vx = -(62 + push + Math.max(0, bias) * 95);
+      } else if (type === "diffH") {
+        p.x = junctionX - dep - Math.random() * 65;
+        p.vx = 62 + push + Math.max(0, bias) * 95;
+      } else if (type === "driftE") {
+        p.x = junctionX - dep - Math.random() * 65;
+        p.vx = 46 + push * 0.74 + Math.max(0, -bias) * 58;
+      } else {
+        p.x = junctionX + dep + Math.random() * 65;
+        p.vx = -(46 + push * 0.74 + Math.max(0, -bias) * 58);
+      }
+      p.x = clamp(p.x, xMin, xMax);
+      state.particles.push(p);
+    }
+
+    function updateParticles(dt, regionY, regionH, junctionX) {
+      const p = state.physics;
+      if (p.junctionReady > 0.15 && state.running) {
+        const fwdBias = clamp((p.bias + 0.05) / 1.45, 0, 1);
+        const revBias = clamp((-p.bias) / 10, 0, 1);
+        const diffBase = 2 + 38 * currentVisual(p.diffCurrentA);
+        const driftBase = 2 + 38 * currentVisual(p.driftCurrentA);
+        const diffRate = clamp(diffBase * (0.35 + 1.9 * fwdBias + 0.2 * (1 - revBias)), 0, 62);
+        const driftRate = clamp(driftBase * (0.35 + 1.9 * revBias + 0.2 * (1 - fwdBias)), 0, 62);
+
+        state.spawnCarry.diffE += diffRate * 0.5 * dt;
+        state.spawnCarry.diffH += diffRate * 0.5 * dt;
+        state.spawnCarry.driftE += driftRate * 0.5 * dt;
+        state.spawnCarry.driftH += driftRate * 0.5 * dt;
+
+        while (state.spawnCarry.diffE >= 1) {
+          spawnParticle("diffE", junctionX, regionY, regionH);
+          state.spawnCarry.diffE -= 1;
+        }
+        while (state.spawnCarry.diffH >= 1) {
+          spawnParticle("diffH", junctionX, regionY, regionH);
+          state.spawnCarry.diffH -= 1;
+        }
+        while (state.spawnCarry.driftE >= 1) {
+          spawnParticle("driftE", junctionX, regionY, regionH);
+          state.spawnCarry.driftE -= 1;
+        }
+        while (state.spawnCarry.driftH >= 1) {
+          spawnParticle("driftH", junctionX, regionY, regionH);
+          state.spawnCarry.driftH -= 1;
+        }
+      }
+
+      const xMin = state.pX + 10;
+      const xMax = state.nX + getBlockGeometry().blockW - 10;
+      const yMin = regionY + 10;
+      const yMax = regionY + regionH - 10;
+      state.particles = state.particles.filter((prt) => {
+        if (state.running) {
+          prt.age += dt;
+          prt.life -= dt;
+          prt.x += prt.vx * dt;
+          prt.y += prt.vy * dt + Math.sin(state.time * 2 + prt.age * 4) * 0.16;
+          prt.vy += Math.sin(prt.age * 3.1) * 2.1;
+          prt.vy = clamp(prt.vy, -34, 34);
+
+          if (prt.x <= xMin) {
+            prt.x = xMin;
+            prt.life -= dt * 1.8;
+          } else if (prt.x >= xMax) {
+            prt.x = xMax;
+            prt.life -= dt * 1.8;
+          }
+
+          if (prt.y <= yMin) {
+            prt.y = yMin;
+            prt.vy = Math.abs(prt.vy) * 0.55;
+          } else if (prt.y >= yMax) {
+            prt.y = yMax;
+            prt.vy = -Math.abs(prt.vy) * 0.55;
+          }
+        }
+        return prt.life > 0.05;
+      });
+    }
+
+    function drawArrow(fromX, fromY, toX, toY, width, color, alpha = 1) {
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const len = Math.hypot(dx, dy) || 1;
+      const ux = dx / len;
+      const uy = dy / len;
+      const head = 7 + width * 1.5;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.lineWidth = width;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(toX - ux * head - uy * head * 0.48, toY - uy * head + ux * head * 0.48);
+      ctx.lineTo(toX - ux * head + uy * head * 0.48, toY - uy * head - ux * head * 0.48);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawCloud(seeds, count, x0, y0, w, h, color, radiusBase, t, twinkle = 1) {
+      ctx.fillStyle = color;
+      for (let i = 0; i < count; i += 1) {
+        const s = seeds[i];
+        const jx = Math.sin(t * 1.4 + s.phase) * s.amp;
+        const jy = Math.cos(t * 1.6 + s.phase * 1.2) * (s.amp * 0.8);
+        const x = x0 + 11 + s.x * (w - 22) + jx;
+        const y = y0 + 11 + s.y * (h - 22) + jy;
+        const r = radiusBase + (Math.sin(t * 4 + s.phase) * 0.22 + 0.22) * twinkle;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawDepletionRegion(junctionX, y, h) {
+      const half = state.depletionWidth * 0.5;
+      if (half < 1) return;
+
+      const left = junctionX - half;
+      const right = junctionX + half;
+      const ionSpread = half * clamp((state.formationProgress - 0.18) / 0.82, 0, 1);
+      const gradient = ctx.createLinearGradient(left, 0, right, 0);
+      gradient.addColorStop(0, "rgba(255, 92, 76, 0.22)");
+      gradient.addColorStop(0.48, "rgba(248, 195, 73, 0.33)");
+      gradient.addColorStop(0.52, "rgba(248, 195, 73, 0.33)");
+      gradient.addColorStop(1, "rgba(51, 140, 255, 0.22)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(left, y, right - left, h);
+
+      ctx.save();
+      ctx.setLineDash([5, 5]);
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = "rgba(227, 163, 61, 0.85)";
+      ctx.strokeRect(left, y + 2, right - left, h - 4);
+      ctx.restore();
+
+      const rows = 4;
+      const cols = Math.max(2, Math.floor(Math.max(12, ionSpread) / 16));
+      ctx.font = "bold 11px Bahnschrift, Segoe UI";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      if (state.formationStep === 1) {
+        const pulse = 0.45 + 0.4 * Math.sin(state.time * 8);
+        ctx.fillStyle = `rgba(253, 229, 132, ${pulse})`;
+        for (let i = 0; i < 14; i += 1) {
+          const cy = y + 16 + (i % rows) * ((h - 32) / (rows - 1 || 1));
+          const cx = junctionX + (Math.random() - 0.5) * 14;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 2.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      if (ionSpread > 5) {
+        for (let r = 0; r < rows; r += 1) {
+          const cy = y + 18 + r * ((h - 36) / (rows - 1 || 1));
+          for (let c = 0; c < cols; c += 1) {
+            const t = cols === 1 ? 0.5 : c / (cols - 1);
+            const span = Math.max(10, ionSpread - 10);
+            const lx = junctionX - 8 - t * span;
+            const rx = junctionX + 8 + t * span;
+
+            ctx.fillStyle = "rgba(230, 73, 58, 0.88)";
+            ctx.beginPath();
+            ctx.arc(lx, cy, 5.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "rgba(255,255,255,0.94)";
+            ctx.fillText("-", lx, cy + 0.3);
+
+            ctx.fillStyle = "rgba(36, 124, 244, 0.9)";
+            ctx.beginPath();
+            ctx.arc(rx, cy, 5.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "rgba(255,255,255,0.96)";
+            ctx.fillText("+", rx, cy + 0.3);
+          }
+        }
+      }
+
+      const fieldSpan = Math.max(12, ionSpread);
+      const fieldCount = Math.max(2, Math.floor(fieldSpan / 24));
+      const fieldAlpha = clamp((state.barrierShown / 1.2) * (0.35 + state.formationProgress * 0.85), 0.12, 0.9);
+      for (let i = 0; i < fieldCount; i += 1) {
+        const fy = y + 18 + i * ((h - 36) / (fieldCount - 1 || 1));
+        drawArrow(junctionX + fieldSpan, fy, junctionX - fieldSpan, fy, 1.9, "#0f8ea8", fieldAlpha);
+      }
+
+      if (fieldSpan > 20) {
+        ctx.strokeStyle = "rgba(230, 73, 58, 0.62)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(junctionX - fieldSpan, y + 3);
+        ctx.lineTo(junctionX - fieldSpan, y + h - 3);
+        ctx.stroke();
+
+        ctx.strokeStyle = "rgba(36, 124, 244, 0.62)";
+        ctx.beginPath();
+        ctx.moveTo(junctionX + fieldSpan, y + 3);
+        ctx.lineTo(junctionX + fieldSpan, y + h - 3);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "rgba(153, 96, 26, 0.92)";
+      ctx.font = "700 12px Bahnschrift, Segoe UI";
+      ctx.textAlign = "center";
+      ctx.fillText("Depletion Layer", junctionX, y - 9);
+    }
+
+    function drawCurrentGuides(junctionX, y, h) {
+      const p = state.physics;
+      const topY = y - 28;
+      const botY = y + h + 28;
+
+      const diffW = 1.4 + currentVisual(p.diffCurrentA) * 5;
+      const driftW = 1.4 + currentVisual(p.driftCurrentA) * 5;
+
+      drawArrow(junctionX + 74, topY, junctionX - 74, topY, clamp(diffW, 1, 6.4), "#ffb340", 0.92);
+      drawArrow(junctionX - 74, topY + 16, junctionX + 74, topY + 16, clamp(diffW, 1, 6.4), "#ff5f34", 0.84);
+
+      drawArrow(junctionX - 74, botY, junctionX + 74, botY, clamp(driftW, 1, 6.4), "#7fd4ff", 0.86);
+      drawArrow(junctionX + 74, botY + 16, junctionX - 74, botY + 16, clamp(driftW, 1, 6.4), "#72a8ff", 0.8);
+
+      ctx.fillStyle = "rgba(53, 90, 106, 0.9)";
+      ctx.font = "700 12px Bahnschrift, Segoe UI";
+      ctx.textAlign = "center";
+      ctx.fillText("Majority carriers: diffusion current", junctionX, topY - 9);
+      ctx.fillText("Minority carriers: drift current", junctionX, botY + 34);
+      ctx.font = "600 11px Bahnschrift, Segoe UI";
+      ctx.fillText("e-: N -> P,  h+: P -> N", junctionX, topY + 29);
+      ctx.fillText("e-: P -> N,  h+: N -> P", junctionX, botY - 18);
+    }
+
+    function drawParticles() {
+      for (const prt of state.particles) {
+        const t = clamp(prt.life / 2.3, 0, 1);
+        const isMajority = prt.type.startsWith("diff");
+        const color = {
+          diffE: "27, 120, 255",
+          diffH: "255, 92, 54",
+          driftE: "136, 216, 255",
+          driftH: "255, 190, 125"
+        }[prt.type] || "200, 200, 200";
+        const radius = isMajority ? 5.1 : 3.8;
+        const alpha = isMajority ? (0.56 + t * 0.44) : (0.45 + t * 0.35);
+
+        ctx.fillStyle = `rgba(${color}, ${alpha})`;
+        ctx.shadowColor = `rgba(${color}, ${0.3 + t * 0.45})`;
+        ctx.shadowBlur = isMajority ? 14 : 8;
+        ctx.beginPath();
+        ctx.arc(prt.x, prt.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.lineWidth = isMajority ? 1 : 1.3;
+        ctx.strokeStyle = isMajority
+          ? `rgba(255,255,255,${0.45 + t * 0.45})`
+          : `rgba(12,45,65,${0.45 + t * 0.35})`;
+        ctx.stroke();
+
+        if (!isMajority) {
+          ctx.beginPath();
+          ctx.fillStyle = "rgba(255,255,255,0.76)";
+          ctx.arc(prt.x, prt.y, 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    function drawBiasCircuit(y, h, blockW) {
+      const p = state.physics;
+      if (state.contact < 0.93 || Math.abs(p.bias) < 0.02) return;
+
+      const leftNode = state.pX + 4;
+      const rightNode = state.nX + blockW - 4;
+      const nodeY = y + h * 0.5;
+      const topY = Math.max(20, y - 58);
+      const vis = currentVisual(p.netCurrentA);
+      const forwardGlow = currentVisual(Math.max(0, p.netCurrentA));
+      const breakdownGlow = p.bias < -4.5
+        ? currentVisual(Math.abs(p.netCurrentA)) * clamp(((-p.bias) - 4.5) / 5.5, 0, 1)
+        : 0;
+      const glow = clamp(forwardGlow + breakdownGlow * 0.9, 0, 1);
+      const wireW = 4 + vis * 6;
+      const wireColor = p.bias >= 0 ? "rgba(233, 126, 41, 0.95)" : "rgba(67, 141, 230, 0.95)";
+      const direction = p.bias >= 0 ? -1 : 1;
+
+      const span = rightNode - leftNode;
+      const bulbX = leftNode + span * 0.22;
+      const meterX = leftNode + span * 0.44;
+      const sourceX = leftNode + span * 0.72;
+      const sourceGap = 18;
+      const rBulb = 14;
+      const rMeter = 16;
+      const plusOnLeft = p.bias >= 0;
+      const longPlateX = plusOnLeft ? sourceX - 7 : sourceX + 7;
+      const shortPlateX = plusOnLeft ? sourceX + 7 : sourceX - 7;
+
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = wireW;
+      ctx.strokeStyle = wireColor;
+      ctx.beginPath();
+      ctx.moveTo(leftNode, nodeY);
+      ctx.lineTo(leftNode, topY);
+      ctx.lineTo(sourceX - sourceGap, topY);
+      ctx.moveTo(sourceX + sourceGap, topY);
+      ctx.lineTo(rightNode, topY);
+      ctx.lineTo(rightNode, nodeY);
+      ctx.stroke();
+
+      ctx.fillStyle = wireColor;
+      ctx.beginPath();
+      ctx.arc(leftNode, nodeY, wireW * 0.46, 0, Math.PI * 2);
+      ctx.arc(rightNode, nodeY, wireW * 0.46, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = `rgba(255, 208, 94, ${0.18 + glow * 0.45})`;
+      ctx.beginPath();
+      ctx.arc(bulbX, topY, rBulb + 11 + glow * 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(128, 92, 34, 0.95)";
+      ctx.lineWidth = 2;
+      ctx.fillStyle = "rgba(255, 243, 180, 0.95)";
+      ctx.beginPath();
+      ctx.arc(bulbX, topY, rBulb, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(bulbX - 6.5, topY - 6.5);
+      ctx.lineTo(bulbX + 6.5, topY + 6.5);
+      ctx.moveTo(bulbX - 6.5, topY + 6.5);
+      ctx.lineTo(bulbX + 6.5, topY - 6.5);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(126, 92, 32, 0.94)";
+      ctx.font = "700 10px Bahnschrift, Segoe UI";
+      ctx.textAlign = "center";
+      ctx.fillText("Bulb", bulbX, topY + 28);
+
+      ctx.fillStyle = "rgba(244, 252, 255, 0.98)";
+      ctx.strokeStyle = "rgba(40, 95, 124, 0.9)";
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.arc(meterX, topY, rMeter, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "rgba(24, 72, 97, 0.96)";
+      ctx.font = "700 12px Bahnschrift, Segoe UI";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("A", meterX, topY - 1);
+
+      const meterLabel = Math.abs(p.netCurrentA) >= 1e-3 ? "mA meter" : "uA meter";
+      ctx.font = "700 11px Bahnschrift, Segoe UI";
+      ctx.fillStyle = "rgba(26, 79, 103, 0.95)";
+      ctx.fillText(meterLabel, meterX, topY + 25);
+      ctx.fillText(formatCurrent(p.netCurrentA, true), meterX, topY + 39);
+
+      ctx.strokeStyle = wireColor;
+      ctx.lineWidth = wireW;
+      ctx.beginPath();
+      ctx.moveTo(sourceX - sourceGap, topY);
+      ctx.lineTo(sourceX - 11, topY);
+      ctx.moveTo(sourceX + 11, topY);
+      ctx.lineTo(sourceX + sourceGap, topY);
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(26, 83, 111, 0.94)";
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(longPlateX, topY - 12);
+      ctx.lineTo(longPlateX, topY + 12);
+      ctx.moveTo(shortPlateX, topY - 8);
+      ctx.lineTo(shortPlateX, topY + 8);
+      ctx.stroke();
+
+      const plusX = plusOnLeft ? longPlateX : shortPlateX;
+      const minusX = plusOnLeft ? shortPlateX : longPlateX;
+      ctx.fillStyle = "rgba(16, 71, 93, 0.95)";
+      ctx.font = "700 13px Bahnschrift, Segoe UI";
+      ctx.fillText("+", plusX, topY - 18);
+      ctx.fillText("-", minusX, topY - 18);
+      ctx.font = "700 11px Bahnschrift, Segoe UI";
+      ctx.fillText(`Vapp = ${p.bias >= 0 ? "+" : ""}${p.bias.toFixed(2)} V`, sourceX, topY + 29);
+
+      const runL = leftNode + 22;
+      const runR = rightNode - 22;
+      const runSpan = Math.max(16, runR - runL);
+      const speed = 68 + vis * 190;
+      const markerCount = 7;
+      for (let i = 0; i < markerCount; i += 1) {
+        const t = (((state.time * speed * direction) + i * (runSpan / markerCount)) % runSpan + runSpan) % runSpan;
+        const x = direction > 0 ? runL + t : runR - t;
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.arc(x, topY, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const arrowY = topY - 13;
+      if (direction > 0) {
+        drawArrow(runL + 4, arrowY, runL + 52, arrowY, 2.2, "#2f7fd3", 0.9);
+      } else {
+        drawArrow(runR - 4, arrowY, runR - 52, arrowY, 2.2, "#c57728", 0.9);
+      }
+      ctx.restore();
+    }
+
+    function roundRect(x, y, w, h, r) {
+      const rr = Math.min(r, h * 0.5, w * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.arcTo(x + w, y, x + w, y + h, rr);
+      ctx.arcTo(x + w, y + h, x, y + h, rr);
+      ctx.arcTo(x, y + h, x, y, rr);
+      ctx.arcTo(x, y, x + w, y, rr);
+      ctx.closePath();
+    }
+
+    function renderStage() {
+      const { blockW, y, h } = getBlockGeometry();
+      const radius = 16;
+      const junctionX = state.pX + blockW + state.gap * 0.5;
+
+      ctx.clearRect(0, 0, state.width, state.height);
+
+      const bg = ctx.createLinearGradient(0, 0, 0, state.height);
+      bg.addColorStop(0, "rgba(244, 252, 255, 0.95)");
+      bg.addColorStop(1, "rgba(231, 247, 252, 0.96)");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, state.width, state.height);
+
+      ctx.strokeStyle = "rgba(16, 92, 122, 0.14)";
+      ctx.lineWidth = 1;
+      for (let gx = 14; gx < state.width; gx += 30) {
+        ctx.beginPath();
+        ctx.moveTo(gx, 10);
+        ctx.lineTo(gx, state.height - 10);
+        ctx.stroke();
+      }
+
+      ctx.lineWidth = 1.4;
+      ctx.strokeStyle = "rgba(34, 85, 105, 0.22)";
+      ctx.beginPath();
+      ctx.moveTo(20, y + h + 8);
+      ctx.lineTo(state.width - 20, y + h + 8);
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(58, 98, 116, 0.85)";
+      ctx.font = "700 12px Bahnschrift, Segoe UI";
+      ctx.textAlign = "left";
+      ctx.fillText("Anode Contact", 22, y - 10);
+      ctx.textAlign = "right";
+      ctx.fillText("Cathode Contact", state.width - 22, y - 10);
+
+      const pDop = clamp((state.physics.NaExp - 14) / 4, 0, 1);
+      const nDop = clamp((state.physics.NdExp - 14) / 4, 0, 1);
+      const pTint = `rgba(${Math.round(182 + 54 * pDop)}, ${Math.round(106 - 30 * pDop)}, ${Math.round(84 - 20 * pDop)}, 0.92)`;
+      const nTint = `rgba(${Math.round(75 - 16 * nDop)}, ${Math.round(152 - 26 * nDop)}, ${Math.round(225 + 16 * nDop)}, 0.92)`;
+
+      ctx.fillStyle = pTint;
+      roundRect(state.pX, y, blockW, h, radius);
+      ctx.fill();
+      ctx.fillStyle = nTint;
+      roundRect(state.nX, y, blockW, h, radius);
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(24, 65, 81, 0.42)";
+      ctx.lineWidth = 1.5;
+      roundRect(state.pX, y, blockW, h, radius);
+      ctx.stroke();
+      roundRect(state.nX, y, blockW, h, radius);
+      ctx.stroke();
+
+      drawBiasCircuit(y, h, blockW);
+
+      const pMajorCount = Math.floor(28 + (state.physics.NaExp - 14) * 30);
+      const nMajorCount = Math.floor(28 + (state.physics.NdExp - 14) * 30);
+      const pMinorCount = Math.floor(6 + (18 - state.physics.NaExp) * 12);
+      const nMinorCount = Math.floor(6 + (18 - state.physics.NdExp) * 12);
+
+      drawCloud(cloud.pMajor, pMajorCount, state.pX, y, blockW, h, "rgba(255, 84, 66, 0.93)", 3.5, state.time, 1);
+      drawCloud(cloud.pMinor, pMinorCount, state.pX, y, blockW, h, "rgba(44, 130, 255, 0.74)", 2.7, state.time, 0.95);
+      drawCloud(cloud.nMajor, nMajorCount, state.nX, y, blockW, h, "rgba(37, 124, 255, 0.93)", 3.5, state.time, 1);
+      drawCloud(cloud.nMinor, nMinorCount, state.nX, y, blockW, h, "rgba(255, 84, 66, 0.68)", 2.7, state.time, 0.95);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(state.pX + 1, y + 1, state.nX + blockW - state.pX - 2, h - 2);
+      ctx.clip();
+      drawDepletionRegion(junctionX, y, h);
+      drawParticles();
+      ctx.restore();
+      drawCurrentGuides(junctionX, y, h);
+
+      ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
+      ctx.font = "700 18px Bahnschrift, Segoe UI";
+      ctx.fillText("P-type", state.pX + blockW * 0.5, y + 28);
+      ctx.fillText("N-type", state.nX + blockW * 0.5, y + 28);
+
+      if (state.gap > 5) {
+        const seamPulse = 0.25 + 0.3 * (1 + Math.sin(state.time * 5)) * 0.5;
+        ctx.fillStyle = `rgba(241, 170, 81, ${seamPulse})`;
+        ctx.fillRect(state.pX + blockW, y, state.gap, h);
+      }
+
+      if (state.contact < 0.6) {
+        const pulse = 0.55 + 0.45 * Math.sin(state.time * 4);
+        ctx.fillStyle = `rgba(80, 122, 140, ${pulse})`;
+        ctx.font = "700 16px Bahnschrift, Segoe UI";
+        ctx.textAlign = "center";
+        ctx.fillText("Slide slabs together to create the junction", state.width * 0.5, y + h + 6);
+      }
+    }
+
+    function renderBarrierChart() {
+      const width = barrierCanvas.getBoundingClientRect().width;
+      const height = barrierCanvas.getBoundingClientRect().height;
+      bctx.clearRect(0, 0, width, height);
+
+      const pad = { l: 42, r: 16, t: 14, b: 30 };
+      const cw = width - pad.l - pad.r;
+      const ch = height - pad.t - pad.b;
+
+      const bg = bctx.createLinearGradient(0, 0, 0, height);
+      bg.addColorStop(0, "rgba(248, 253, 255, 0.95)");
+      bg.addColorStop(1, "rgba(229, 244, 251, 0.95)");
+      bctx.fillStyle = bg;
+      bctx.fillRect(0, 0, width, height);
+
+      bctx.strokeStyle = "rgba(26, 89, 112, 0.2)";
+      bctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i += 1) {
+        const y = pad.t + (ch * i) / 4;
+        bctx.beginPath();
+        bctx.moveTo(pad.l, y);
+        bctx.lineTo(width - pad.r, y);
+        bctx.stroke();
+      }
+
+      bctx.strokeStyle = "rgba(23, 73, 94, 0.5)";
+      bctx.lineWidth = 1.2;
+      bctx.beginPath();
+      bctx.moveTo(pad.l, pad.t + ch);
+      bctx.lineTo(width - pad.r, pad.t + ch);
+      bctx.stroke();
+      bctx.beginPath();
+      bctx.moveTo(pad.l, pad.t);
+      bctx.lineTo(pad.l, pad.t + ch);
+      bctx.stroke();
+
+      bctx.fillStyle = "rgba(34, 79, 97, 0.88)";
+      bctx.font = "11px Bahnschrift, Segoe UI";
+      bctx.textAlign = "left";
+      bctx.fillText("Potential (V)", 4, pad.t + 10);
+      bctx.textAlign = "center";
+      bctx.fillText("p-side", pad.l + cw * 0.12, height - 8);
+      bctx.fillText("junction", pad.l + cw * 0.5, height - 8);
+      bctx.fillText("n-side", pad.l + cw * 0.88, height - 8);
+
+      const barrier = state.barrierShown;
+      const depNorm = clamp(state.depletionWidth / (state.width * 0.65), 0.03, 0.42);
+      const xStart = 0.5 - depNorm * 0.5;
+      const xEnd = 0.5 + depNorm * 0.5;
+      const maxDisplayV = Math.max(1.25, state.physics.Vbi + 0.75, barrier + 0.55);
+
+      bctx.lineWidth = 3;
+      bctx.strokeStyle = "rgba(200, 126, 44, 0.95)";
+      bctx.beginPath();
+      for (let i = 0; i <= 220; i += 1) {
+        const u = i / 220;
+        let pot = 0;
+        if (u <= xStart) {
+          pot = 0;
+        } else if (u >= xEnd) {
+          pot = barrier;
+        } else {
+          const t = (u - xStart) / (xEnd - xStart);
+          pot = barrier * 0.5 * (1 - Math.cos(Math.PI * t));
+        }
+        const x = pad.l + u * cw;
+        const y = pad.t + ch - (pot / maxDisplayV) * ch;
+        if (i === 0) bctx.moveTo(x, y);
+        else bctx.lineTo(x, y);
+      }
+      bctx.stroke();
+
+      bctx.strokeStyle = "rgba(22, 120, 146, 0.9)";
+      bctx.lineWidth = 2;
+      bctx.beginPath();
+      for (let i = 0; i <= 220; i += 1) {
+        const u = i / 220;
+        let e = 0;
+        if (u > xStart && u < xEnd) {
+          const t = (u - xStart) / (xEnd - xStart);
+          e = Math.sin(Math.PI * t) * barrier * 1.1;
+        }
+        const x = pad.l + u * cw;
+        const y = pad.t + ch - (e / maxDisplayV) * ch;
+        if (i === 0) bctx.moveTo(x, y);
+        else bctx.lineTo(x, y);
+      }
+      bctx.stroke();
+
+      bctx.fillStyle = "rgba(160, 95, 23, 0.95)";
+      bctx.font = "700 12px Bahnschrift, Segoe UI";
+      bctx.textAlign = "right";
+      bctx.fillText(`Barrier: ${barrier.toFixed(2)} V`, width - 14, pad.t + 14);
+    }
+
+    function updateMeters() {
+      const p = state.physics;
+      const diffVis = Math.round(currentVisual(p.diffCurrentA) * 100);
+      const driftVis = Math.round(currentVisual(p.driftCurrentA) * 100);
+      const depVis = clamp((state.depletionWidth / (state.width * 0.32)) * 100, 0, 100);
+      const formationVis = Math.round(state.formationProgress * 100);
+      const stepInfo = getFormationInfo();
+
+      controls.builtInVal.textContent = `${p.Vbi.toFixed(2)} V`;
+      controls.effBarrierVal.textContent = `${state.barrierShown.toFixed(2)} V`;
+      controls.depletionVal.textContent = `${Math.round(state.depletionWidth * 4.8)} nm (scaled)`;
+      controls.netCurrentVal.textContent = formatCurrent(p.netCurrentA, true);
+      controls.diffusionVal.textContent = formatCurrent(p.diffCurrentA);
+      controls.driftVal.textContent = formatCurrent(p.driftCurrentA);
+      controls.depletionPct.textContent = `${Math.round(depVis)}%`;
+      controls.stepStageVal.textContent = stepInfo.label;
+      controls.formationVal.textContent = `${formationVis}%`;
+
+      controls.diffusionBar.style.width = `${diffVis}%`;
+      controls.driftBar.style.width = `${driftVis}%`;
+      controls.depletionBar.style.width = `${depVis}%`;
+      controls.formationBar.style.width = `${formationVis}%`;
+
+      const connected = state.contact > 0.93;
+      if (!connected) {
+        junctionState.textContent = "Junction Open";
+        junctionState.style.background = "rgba(240, 248, 255, 0.86)";
+        junctionState.style.color = "#1f556d";
+        junctionState.style.borderColor = "rgba(29, 99, 124, 0.24)";
+        statusText.textContent = "Bring P-type and N-type in contact. Once they touch, carriers diffuse and the depletion layer starts forming.";
+      } else if (Math.abs(p.netScaled) < 0.03) {
+        junctionState.textContent = "Equilibrium Junction";
+        junctionState.style.background = "rgba(228, 255, 238, 0.88)";
+        junctionState.style.color = "#0c6440";
+        junctionState.style.borderColor = "rgba(18, 109, 72, 0.28)";
+        statusText.textContent = `${stepInfo.short} Currents are nearly balanced at equilibrium.`;
+      } else if (p.netScaled > 0) {
+        junctionState.textContent = "Forward Active";
+        junctionState.style.background = "rgba(255, 245, 226, 0.9)";
+        junctionState.style.color = "#7f4a1a";
+        junctionState.style.borderColor = "rgba(168, 102, 44, 0.28)";
+        statusText.textContent = `${stepInfo.short} Forward bias lowers the barrier and majority diffusion dominates.`;
+      } else {
+        junctionState.textContent = "Reverse Active";
+        junctionState.style.background = "rgba(231, 243, 255, 0.92)";
+        junctionState.style.color = "#1c5380";
+        junctionState.style.borderColor = "rgba(48, 112, 169, 0.28)";
+        statusText.textContent = `${stepInfo.short} Reverse bias widens depletion and minority drift dominates.`;
+      }
+    }
+
+    function updateAutoJoin(dt) {
+      if (state.autoGapTarget === null) return;
+      const { blockW } = getBlockGeometry();
+      const center = state.width * 0.5;
+      const gap = state.gap;
+      const nextGap = gap + (state.autoGapTarget - gap) * clamp(dt * 4.6, 0.02, 0.28);
+      state.pX = center - blockW - nextGap * 0.5;
+      state.nX = center + nextGap * 0.5;
+      constrainBlocks();
+      if (Math.abs(nextGap - state.autoGapTarget) < 1.2) {
+        if (state.autoGapTarget <= 3) {
+          state.nX = state.pX + blockW + 2;
+        }
+        state.autoGapTarget = null;
+      }
+    }
+
+    function tick(ts) {
+      if (!state.lastTs) state.lastTs = ts;
+      const frameDt = Math.min((ts - state.lastTs) / 1000, 0.04);
+      state.lastTs = ts;
+
+      if (state.running) {
+        state.dt = frameDt;
+        state.time += state.dt;
+        updateAutoJoin(state.dt);
+      } else {
+        state.dt = 0;
+      }
+      calcPhysics();
+
+      const { y, h, blockW } = getBlockGeometry();
+      const junctionX = state.pX + blockW + state.gap * 0.5;
+      updateParticles(state.dt, y, h, junctionX);
+      renderStage();
+      renderBarrierChart();
+      updateMeters();
+
+      requestAnimationFrame(tick);
+    }
+
+    function resetSimulation() {
+      controls.pDoping.value = "16";
+      controls.nDoping.value = "16";
+      controls.temp.value = "300";
+      controls.bias.value = "0";
+      updateControlOutputs();
+
+      resetBlocks();
+      state.depletionWidth = 0;
+      state.barrierShown = 0;
+      state.formationProgress = 0;
+      state.formationStep = 0;
+      state.particles.length = 0;
+      state.autoGapTarget = null;
+      state.spawnCarry.diffE = 0;
+      state.spawnCarry.diffH = 0;
+      state.spawnCarry.driftE = 0;
+      state.spawnCarry.driftH = 0;
+    }
+
+    function attachEvents() {
+      const sliders = [controls.pDoping, controls.nDoping, controls.temp, controls.bias];
+      sliders.forEach((slider) => {
+        slider.addEventListener("input", updateControlOutputs);
+      });
+
+      controls.playBtn.addEventListener("click", () => {
+        state.running = !state.running;
+        controls.playBtn.textContent = state.running ? "Pause" : "Play";
+      });
+      controls.resetBtn.addEventListener("click", resetSimulation);
+      controls.autoJoinBtn.addEventListener("click", () => {
+        state.autoGapTarget = 2;
+      });
+      controls.separateBtn.addEventListener("click", () => {
+        state.autoGapTarget = 170;
+      });
+      controls.equilibriumBtn.addEventListener("click", () => {
+        controls.bias.value = "0";
+        updateControlOutputs();
+        state.autoGapTarget = 2;
+      });
+      controls.forwardBtn.addEventListener("click", () => {
+        controls.bias.value = "1.00";
+        updateControlOutputs();
+        state.autoGapTarget = 2;
+      });
+      controls.reverseBtn.addEventListener("click", () => {
+        controls.bias.value = "-6.00";
+        updateControlOutputs();
+        state.autoGapTarget = 2;
+      });
+
+      simCanvas.addEventListener("pointerdown", onPointerDown);
+      simCanvas.addEventListener("pointermove", onPointerMove);
+      simCanvas.addEventListener("pointerup", onPointerUp);
+      simCanvas.addEventListener("pointercancel", onPointerUp);
+      window.addEventListener("resize", resizeCanvases);
+    }
+
+    updateControlOutputs();
+    attachEvents();
+    resizeCanvases();
+    calcPhysics();
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>
